@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI English Level Converter</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use Inter font family -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+        .main-button {
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+        }
+        .main-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- Main Container -->
+    <div id="app-container" class="bg-white p-6 md:p-10 rounded-xl shadow-2xl w-full max-w-2xl border border-gray-100">
+
+        <h1 class="text-3xl font-extrabold text-gray-900 text-center mb-1">
+            🗣️ AI English Tutor
+        </h1>
+        <p class="text-center text-gray-500 mb-8">
+            Speak or type your sentence and get an instant, level-adjusted correction.
+        </p>
+
+        <!-- Start/Stop Button Container -->
+        <div class="flex justify-center mb-8">
+            <button id="toggle-session-btn" 
+                    class="main-button px-8 py-3 rounded-full text-white font-semibold bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50">
+                Start Translation Session
+            </button>
+        </div>
+
+        <!-- Translation Interface (Hidden until started) -->
+        <div id="translation-interface" class="hidden space-y-6">
+
+            <!-- Input Area -->
+            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <label for="user-input" class="block text-sm font-medium text-gray-700 mb-2 flex justify-between items-center">
+                    <span>1. Your Broken English:</span>
+                    <button id="mic-button" title="Start Voice Input"
+                            class="text-red-600 hover:text-red-700 transition duration-150 p-2 rounded-full hover:bg-red-100 disabled:opacity-50" disabled>
+                        <svg id="mic-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                            <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"></path>
+                            <path d="M19 10v2a7 7 0 01-14 0v-2h-2v2a9 9 0 008 8.94V23h2v-2.06A9 9 0 0021 12v-2h-2z"></path>
+                        </svg>
+                    </button>
+                </label>
+                <textarea id="user-input" rows="3" placeholder="Type or speak your sentence here..."
+                          class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"></textarea>
+                <p id="voice-status" class="text-xs text-red-500 mt-1 h-4"></p>
+            </div>
+
+            <!-- Level Selection -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">2. Choose Difficulty Level:</label>
+                <div class="flex flex-wrap gap-3">
+                    <button data-level="Easy" class="level-btn bg-green-500 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-green-600 transition duration-150">
+                        Easy
+                    </button>
+                    <button data-level="Medium" class="level-btn bg-indigo-600 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-indigo-700 transition duration-150 ring-2 ring-indigo-400">
+                        Medium (Default)
+                    </button>
+                    <button data-level="Difficult" class="level-btn bg-red-500 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-red-600 transition duration-150">
+                        Difficult
+                    </button>
+                </div>
+            </div>
+
+            <!-- Translate Button -->
+            <button id="translate-btn" 
+                    class="main-button w-full px-4 py-3 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 focus:outline-none focus:ring-4 focus:ring-purple-500 focus:ring-opacity-50 flex items-center justify-center disabled:opacity-50" disabled>
+                <span id="translate-text">Translate & Speak Result</span>
+            </button>
+            
+            <p id="status-message" class="text-center text-sm text-gray-600 h-5"></p>
+
+
+            <!-- Result Area -->
+            <div id="result-box" class="hidden bg-white p-4 rounded-xl border-2 border-green-200 shadow-md">
+                <h3 class="text-lg font-semibold text-green-700 mb-2 flex items-center justify-between">
+                    ✨ Correct English
+                    <button id="copy-btn" title="Copy to Clipboard"
+                            class="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition duration-150">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
+                        </svg>
+                    </button>
+                </h3>
+                <p id="corrected-text" class="text-gray-800 text-lg whitespace-pre-wrap"></p>
+            </div>
+
+            <div id="error-box" class="hidden bg-red-100 p-4 rounded-lg text-red-700 text-sm border border-red-300">
+                <p id="error-message"></p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // ==========================================
+        // 1. CONFIGURATION
+        // ==========================================
+        const API_KEY = "AIzaSyDRAdz8y_ig_waCCB29A6HSzZrlYYMhotc"; // Canvas will provide this key at runtime
+        const MODEL_NAME = 'gemini-2.5-flash-preview-09-2025';
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`;
+        
+        let isSessionActive = false;
+        let selectedLevel = 'Medium'; // Default level
+        let recognition = null; // Speech recognition instance
+
+        // ==========================================
+        // 2. DOM ELEMENTS
+        // ==========================================
+        const appContainer = document.getElementById('app-container');
+        const toggleBtn = document.getElementById('toggle-session-btn');
+        const translateInterface = document.getElementById('translation-interface');
+        const userInput = document.getElementById('user-input');
+        const micBtn = document.getElementById('mic-button');
+        const voiceStatus = document.getElementById('voice-status');
+        const translateBtn = document.getElementById('translate-btn');
+        const translateText = document.getElementById('translate-text');
+        const resultBox = document.getElementById('result-box');
+        const correctedTextEl = document.getElementById('corrected-text');
+        const copyBtn = document.getElementById('copy-btn');
+        const statusMessageEl = document.getElementById('status-message');
+        const errorBox = document.getElementById('error-box');
+        const errorMessageEl = document.getElementById('error-message');
+        const levelButtons = document.querySelectorAll('.level-btn');
+
+        // ==========================================
+        // 3. UTILITY FUNCTIONS
+        // ==========================================
+
+        /**
+         * Converts text to speech using the browser's SpeechSynthesis API.
+         * @param {string} text The text to speak.
+         */
+        const speak = (text) => {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 1.0; 
+                utterance.pitch = 1.0;
+                window.speechSynthesis.speak(utterance);
+            } else {
+                console.warn("Speech Synthesis not supported in this browser.");
+            }
+        };
+
+        /**
+         * Copies the corrected text to the clipboard.
+         */
+        const copyResult = async () => {
+            const text = correctedTextEl.textContent;
+            try {
+                // Use execCommand for broader compatibility in sandboxed environments
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                statusMessageEl.textContent = '✅ Copied to clipboard!';
+                setTimeout(() => statusMessageEl.textContent = '', 2000);
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+                statusMessageEl.textContent = '❌ Failed to copy.';
+            }
+        };
+
+        /**
+         * Updates the UI to show loading state.
+         * @param {boolean} isLoading
+         */
+        const setLoadingState = (isLoading) => {
+            translateBtn.disabled = isLoading;
+            micBtn.disabled = isLoading;
+            userInput.disabled = isLoading;
+            levelButtons.forEach(btn => btn.disabled = isLoading);
+            toggleBtn.disabled = isLoading;
+            
+            if (isLoading) {
+                translateText.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Translating...';
+                statusMessageEl.textContent = '';
+                errorBox.classList.add('hidden');
+            } else {
+                translateText.textContent = 'Translate & Speak Result';
+            }
+        };
+
+        /**
+         * Clears all output and error messages.
+         */
+        const clearOutput = () => {
+            resultBox.classList.add('hidden');
+            correctedTextEl.textContent = '';
+            errorBox.classList.add('hidden');
+            errorMessageEl.textContent = '';
+            statusMessageEl.textContent = '';
+        };
+
+        /**
+         * Shows an error message in the dedicated box.
+         * @param {string} message
+         */
+        const showError = (message) => {
+            errorMessageEl.textContent = message;
+            errorBox.classList.remove('hidden');
+            resultBox.classList.add('hidden');
+        };
+
+        // ==========================================
+        // 4. API COMMUNICATION (GEMINI)
+        // ==========================================
+
+        /**
+         * Calls the Gemini API to correct and rephrase the text based on the level.
+         * @param {string} userText The broken English input.
+         * @param {string} level The target difficulty level ('Easy', 'Medium', 'Difficult').
+         * @returns {Promise<string>} The corrected text.
+         */
+        const getAiCorrection = async (userText, level, retryCount = 0) => {
+            const MAX_RETRIES = 3;
+            const systemPrompt = `
+                You are a helpful and encouraging English Tutor.
+                
+                Task:
+                1. Analyze this input text: "${userText}"
+                2. If the text is completely unintelligible or not English, explain clearly and politely why you cannot understand it.
+                3. If the text is understandable (even if broken), rewrite it into **${level}** English.
+                
+                Guidelines for Levels:
+                - "Easy": Use very simple vocabulary (top 500 words), short sentences (5-7 words max), and active voice. Like talking to a 6-year-old.
+                - "Medium": Use standard professional English. Clear, polite, and grammatically perfect. Suitable for emails or work.
+                - "Difficult": Use advanced vocabulary, complex sentence structures, idioms, and an academic or literary tone.
+                
+                Output Format:
+                Only provide the rewritten text OR the explanation. Do not add introductory text like "Here is the correction" or "The corrected sentence is:".
+            `;
+
+            const payload = {
+                contents: [{ parts: [{ text: userText }] }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                }
+            };
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                const candidate = result.candidates?.[0];
+
+                if (candidate && candidate.content?.parts?.[0]?.text) {
+                    return candidate.content.parts[0].text.trim();
+                } else {
+                    return "I am sorry, the AI did not return a valid response.";
+                }
+            } catch (e) {
+                if (retryCount < MAX_RETRIES) {
+                    const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    return getAiCorrection(userText, level, retryCount + 1);
+                }
+                console.error("API Call failed after retries:", e);
+                throw new Error(`Failed to get correction from AI. ${e.message}`);
+            }
+        };
+
+        // ==========================================
+        // 5. SPEECH RECOGNITION (Input)
+        // ==========================================
+
+        /**
+         * Initializes and starts the browser's speech recognition.
+         */
+        const startSpeechRecognition = () => {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                showError("❌ Voice input is not supported by your browser. Please use the text box.");
+                micBtn.disabled = true;
+                return;
+            }
+
+            // Fallback for different browser implementations
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+            if (recognition) {
+                // Stop any previous running session
+                recognition.stop();
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.lang = 'en-US'; 
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            micBtn.classList.remove('text-red-600', 'hover:text-red-700');
+            micBtn.classList.add('text-green-600', 'hover:text-green-700', 'animate-pulse', 'bg-green-100');
+            voiceStatus.textContent = 'Listening... Speak now.';
+            userInput.value = ''; // Clear previous text
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                userInput.value = transcript;
+                voiceStatus.textContent = 'Voice captured.';
+                micBtn.classList.remove('text-green-600', 'hover:text-green-700', 'animate-pulse', 'bg-green-100');
+                micBtn.classList.add('text-red-600', 'hover:text-red-700');
+                translateBtn.disabled = !userInput.value.trim(); // Enable translate button
+            };
+
+            recognition.onspeechend = () => {
+                recognition.stop();
+                voiceStatus.textContent = 'Processing...';
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error', event.error);
+                voiceStatus.textContent = `Error: ${event.error}`;
+                micBtn.classList.remove('text-green-600', 'hover:text-green-700', 'animate-pulse', 'bg-green-100');
+                micBtn.classList.add('text-red-600', 'hover:text-red-700');
+            };
+
+            recognition.start();
+        };
+
+        // ==========================================
+        // 6. MAIN APPLICATION LOGIC
+        // ==========================================
+
+        /**
+         * Toggles the translation session on or off.
+         */
+        const toggleTranslationSession = () => {
+            isSessionActive = !isSessionActive;
+
+            if (isSessionActive) {
+                // START SESSION
+                toggleBtn.textContent = 'Stop Session';
+                toggleBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700', 'focus:ring-indigo-500');
+                toggleBtn.classList.add('bg-red-600', 'hover:bg-red-700', 'focus:ring-red-500');
+                
+                translateInterface.classList.remove('hidden');
+                micBtn.disabled = false;
+                translateBtn.disabled = true; // Disable until input is provided
+
+                clearOutput();
+                userInput.value = '';
+                speak("Hello! I am your English tutor. Please type or click the microphone to speak your sentence, then select your difficulty level.");
+                statusMessageEl.textContent = 'Session started. Waiting for your input...';
+
+            } else {
+                // STOP SESSION
+                if (recognition) recognition.stop();
+                window.speechSynthesis.cancel();
+                
+                toggleBtn.textContent = 'Start Translation Session';
+                toggleBtn.classList.remove('bg-red-600', 'hover:bg-red-700', 'focus:ring-red-500');
+                toggleBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700', 'focus:ring-indigo-500');
+
+                translateInterface.classList.add('hidden');
+                speak("Goodbye! Keep practicing.");
+                statusMessageEl.textContent = '';
+                voiceStatus.textContent = '';
+            }
+        };
+
+        /**
+         * Handles the translation process (Fetch -> Display -> Speak).
+         */
+        const handleTranslation = async () => {
+            const text = userInput.value.trim();
+            if (!text) {
+                showError("Please enter some text or use the microphone.");
+                return;
+            }
+            
+            clearOutput();
+            setLoadingState(true);
+
+            try {
+                const corrected = await getAiCorrection(text, selectedLevel);
+                
+                correctedTextEl.textContent = corrected;
+                resultBox.classList.remove('hidden');
+                
+                // Speak the result
+                speak(corrected);
+
+                // UI update
+                statusMessageEl.textContent = `Correction provided at ${selectedLevel} level.`;
+                userInput.value = ''; // Clear for next input
+
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                setLoadingState(false);
+                translateBtn.disabled = true; // Wait for new input/voice
+            }
+        };
+
+        // ==========================================
+        // 7. EVENT LISTENERS
+        // ==========================================
+
+        // Start/Stop Session
+        toggleBtn.addEventListener('click', toggleTranslationSession);
+
+        // Mic Button
+        micBtn.addEventListener('click', startSpeechRecognition);
+
+        // Copy Button
+        copyBtn.addEventListener('click', copyResult);
+
+        // Translate Button
+        translateBtn.addEventListener('click', handleTranslation);
+
+        // Level selection
+        levelButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                // Reset styling
+                levelButtons.forEach(btn => {
+                    btn.classList.remove('ring-2', 'ring-indigo-400');
+                });
+
+                // Apply new level and highlight
+                selectedLevel = e.target.dataset.level;
+                e.target.classList.add('ring-2', 'ring-indigo-400');
+                
+                statusMessageEl.textContent = `Level set to ${selectedLevel}.`;
+                setTimeout(() => statusMessageEl.textContent = '', 2000);
+            });
+        });
+
+        // Enable/Disable Translate button based on text input
+        userInput.addEventListener('input', () => {
+            translateBtn.disabled = !userInput.value.trim() || !isSessionActive;
+            clearOutput();
+        });
+
+    </script>
+</body>
+</html>
